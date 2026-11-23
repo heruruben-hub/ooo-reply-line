@@ -5,6 +5,10 @@ The reply is a single line, under 160 characters, in the voice of an AI
 agent heading off on vacation. The program validates the line (1-159
 characters, not only whitespace, exactly one line) before writing it,
 then re-reads the file and verifies the bytes on disk match.
+
+Voice intent: the AI agent is on vacation and has left a toaster with
+Wi-Fi in charge of the inbox — deadpan, a little absurd, and friendly
+enough that the recipient smiles instead of feeling ignored.
 """
 
 import os
@@ -20,13 +24,29 @@ LINE = (
 MAX_CHARS = 159  # the gate allows 1 to 160 characters; stay under it
 
 
+def validate_single_line(line: str) -> str | None:
+    """Reject an entry that is not exactly one line.
+
+    Returns a clear error message when the line contains a newline or
+    carriage return, otherwise None. The out-of-office gate expects a
+    single line, so any embedded line break is a hard failure, not
+    something to strip silently.
+    """
+    if "\n" in line:
+        return "error: entry must be a single line (contains a newline)"
+    if "\r" in line:
+        return "error: entry must be a single line (contains a carriage return)"
+    return None
+
+
 def main() -> int:
     line = LINE
     if not line or not line.strip():
         print("error: entry line is empty", file=sys.stderr)
         return 1
-    if "\n" in line or "\r" in line:
-        print("error: entry must be a single line", file=sys.stderr)
+    single_line_error = validate_single_line(line)
+    if single_line_error is not None:
+        print(single_line_error, file=sys.stderr)
         return 1
     if len(line) > MAX_CHARS:
         print(f"error: entry is {len(line)} chars, over {MAX_CHARS}",
